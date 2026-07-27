@@ -677,6 +677,10 @@ def test_clean_temporary_resources_folder_never_created(tmpdir):
     assert manager._cached_temp_folders == {}
     assert manager._finalizers == {}
 
+    # Cleaning up a context that has already been forgotten is a no-op
+    manager._clean_temporary_resources("context_id")
+    assert manager._cached_temp_folders == {}
+
 
 @with_numpy
 @with_multiprocessing
