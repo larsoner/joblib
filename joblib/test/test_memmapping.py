@@ -705,8 +705,13 @@ def test_no_leaked_folder_registration_per_parallel_call(monkeypatch):
     monkeypatch.setattr(jmr.resource_tracker, "register", _register)
     monkeypatch.setattr(jmr.resource_tracker, "unregister", _unregister)
 
+    # The backend is pinned: the default one is overridable from the
+    # JOBLIB_TESTS_DEFAULT_PARALLEL_BACKEND environment variable and only the
+    # process-based backends register temporary folders at all.
     for _ in range(3):
-        Parallel(n_jobs=2, max_nbytes=None)(delayed(id)(i) for i in range(4))
+        Parallel(n_jobs=2, backend="loky", max_nbytes=None)(
+            delayed(id)(i) for i in range(4)
+        )
 
     assert registered, "no temporary folder was registered at all"
     assert set(registered) <= set(unregistered)
