@@ -4,6 +4,14 @@ Release Notes
 In development
 --------------
 
+- Stop leaking one temporary folder registration, and the ``atexit`` finalizer
+  behind it, per ``Parallel`` call. Those folders are registered with the
+  ``resource_tracker`` upfront but only created on the first memmap dump, so
+  nothing unregistered them when no array was dumped. A process that exited
+  without running its ``atexit`` finalizers, for instance one killed by a test
+  timeout, then reported every one of them as a leaked folder and failed to
+  delete folders that had never been created.
+
 - Fix ``eval_expr`` (used to evaluate the ``pre_dispatch`` argument of
   ``Parallel``) to raise a ``ValueError`` as documented instead of leaking a
   ``ZeroDivisionError`` for expressions that divide or take a modulo by zero.
