@@ -5,6 +5,7 @@ try:
 except ImportError:
     import pickle as cpickle
 import functools
+import os
 import time
 from pickle import PicklingError
 
@@ -63,6 +64,32 @@ def test_concurrency_safe_write(tmpdir, backend):
         for i in range(12)
     ]
     Parallel(n_jobs=2, backend=backend)(delayed(func)(obj, filename) for func in funcs)
+
+
+def test_store_cached_func_code_is_not_written_in_place(tmpdir):
+    # Non-regression test for #1694: func_code.py used to be truncated and
+    # rewritten in place, so a concurrent reader could catch it half-written,
+    # read that as a changed function and wipe the whole cache directory.
+    backend = FileSystemStoreBackend()
+    backend.location = tmpdir.join("store").strpath
+    backend.compress = None
+
+    call_id = ("mod", "func")
+    backend.store_cached_func_code(call_id, "# first line: 1\ndef f(): pass\n")
+    path = os.path.join(backend.location, *call_id, "func_code.py")
+    with open(path) as f:
+        original = f.read()
+
+    def exploding_open(name, mode):
+        open(name, mode).close()  # truncates whatever it is pointed at
+        raise RuntimeError("boom")
+
+    backend._open_item = exploding_open
+    with pytest.raises(RuntimeError, match="boom"):
+        backend.store_cached_func_code(call_id, "# first line: 1\ndef g(): pass\n")
+
+    with open(path) as f:
+        assert f.read() == original
 
 
 def test_warning_on_dump_failure(tmpdir):

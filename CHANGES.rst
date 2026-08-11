@@ -10,6 +10,8 @@ In development
   differed between processes. A worker reading the ``func_code.py`` written by
   another one concluded that the function had changed and wiped the whole
   cache directory for it, discarding results computed by its peers.
+  ``func_code.py`` is also no longer rewritten in place, so a reader can no
+  longer catch it half-written and draw the same conclusion.
   https://github.com/joblib/joblib/issues/1694
 
 - Drop python 3.9 support. The oldest supported Python version
