@@ -4,6 +4,10 @@ Release Notes
 In development
 --------------
 
+- Drop python 3.9 support. The oldest supported Python version
+  is now Python 3.10.
+  https://github.com/joblib/joblib/pull/1773
+
 - Stop leaking one temporary folder registration, and the ``atexit`` finalizer
   behind it, per ``Parallel`` call. Those folders are registered with the
   ``resource_tracker`` upfront but only created on the first memmap dump, so
