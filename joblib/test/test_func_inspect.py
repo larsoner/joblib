@@ -383,5 +383,4 @@ def test_func_code_consistency_without_source():
     from joblib.parallel import Parallel, delayed
 
     codes = Parallel(n_jobs=2)(delayed(_get_code_no_source)() for _ in range(5))
-    assert len(set(codes)) == 1
     assert set(codes) == {_get_code_no_source()}

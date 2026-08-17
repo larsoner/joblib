@@ -34,15 +34,19 @@ def _code_fingerprint(code):
 
     The fields below mirror CPython's own ``code_hash()``:
     https://github.com/python/cpython/blob/5918085bb6f4a3a48193cacb9bb99b044d4e0452/Objects/codeobject.c#L2608-L2624
-    co_localsplusnames is spelled out as varnames/cellvars/freevars, and
-    co_firstlineno and co_linetable are deliberately left out: joblib compares
-    source *text* and tracks the line number separately, so moving a function
-    without editing it must not invalidate its cache.
+    co_localsplusnames is spelled out as varnames/cellvars/freevars. Only the
+    position information, co_firstlineno and co_linetable, is deliberately left
+    out: joblib compares source *text* and tracks the line number separately,
+    so moving a function without editing it must not invalidate its cache. For
+    the same reason co_filename is not included, unlike ``marshal.dumps``,
+    which would key a notebook function to the cell number it last ran in.
     """
     parts = [
         code.co_name,
         # co_code de-specializes adaptive bytecode, like _Py_GetBaseCodeUnit
         code.co_code.hex(),
+        # 3.11+ moved the try/except ranges out of the bytecode and in here
+        getattr(code, "co_exceptiontable", b"").hex(),
         *code.co_names,
         *code.co_varnames,
         *code.co_cellvars,

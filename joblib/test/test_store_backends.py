@@ -5,7 +5,6 @@ try:
 except ImportError:
     import pickle as cpickle
 import functools
-import os
 import time
 from pickle import PicklingError
 
@@ -71,25 +70,23 @@ def test_store_cached_func_code_is_not_written_in_place(tmpdir):
     # rewritten in place, so a concurrent reader could catch it half-written,
     # read that as a changed function and wipe the whole cache directory.
     backend = FileSystemStoreBackend()
-    backend.location = tmpdir.join("store").strpath
-    backend.compress = None
+    backend.configure(tmpdir.join("store").strpath)
 
     call_id = ("mod", "func")
     backend.store_cached_func_code(call_id, "# first line: 1\ndef f(): pass\n")
-    path = os.path.join(backend.location, *call_id, "func_code.py")
-    with open(path) as f:
-        original = f.read()
+    original = backend.get_cached_func_code(call_id)
 
     def exploding_open(name, mode):
         open(name, mode).close()  # truncates whatever it is pointed at
         raise RuntimeError("boom")
 
+    old_open = backend._open_item
     backend._open_item = exploding_open
     with pytest.raises(RuntimeError, match="boom"):
         backend.store_cached_func_code(call_id, "# first line: 1\ndef g(): pass\n")
 
-    with open(path) as f:
-        assert f.read() == original
+    backend._open_item = old_open
+    assert backend.get_cached_func_code(call_id) == original
 
 
 def test_warning_on_dump_failure(tmpdir):
