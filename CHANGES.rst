@@ -4,6 +4,14 @@ Release Notes
 In development
 --------------
 
+- Fix a ``KeyError`` raised from ``cache_validation_callback`` when several
+  processes share a cache. A cached item is considered present as soon as its
+  output has been written, but its metadata is written just afterwards, so a
+  concurrent reader could pick the item up with no metadata and pass an empty
+  dict to the callback -- ``expires_after`` then failed on ``metadata["time"]``.
+  Such an item is now treated as a cache miss and recomputed.
+  https://github.com/joblib/joblib/issues/1727
+
 - Drop python 3.9 support. The oldest supported Python version
   is now Python 3.10.
   https://github.com/joblib/joblib/pull/1773

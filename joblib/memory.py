@@ -483,13 +483,17 @@ class MemorizedFunc(Logger):
             return False
 
         # Call the user defined cache validation callback
-        metadata = self.store_backend.get_metadata(call_id)
-        if (
-            self.cache_validation_callback is not None
-            and not self.cache_validation_callback(metadata)
-        ):
-            self.store_backend.clear_item(call_id)
-            return False
+        if self.cache_validation_callback is not None:
+            metadata = self.store_backend.get_metadata(call_id)
+            if not metadata:
+                # output.pkl is written before metadata.json, so a concurrent
+                # reader can find the item present with its metadata missing,
+                # and get_metadata returns {} for an unreadable one anyway.
+                # Recompute rather than hand the callback an empty dict (#1727)
+                return False
+            if not self.cache_validation_callback(metadata):
+                self.store_backend.clear_item(call_id)
+                return False
 
         return True
 

@@ -1531,6 +1531,26 @@ class TestCacheValidationCallback:
         assert not d2["run"]
         assert d3["run"]
 
+    def test_missing_metadata_recomputes(self, tmp_path):
+        "Non-regression test for #1727: an item without metadata is a miss"
+        # output.pkl is written before metadata.json, so a concurrent reader
+        # can find the item present with its metadata still missing. Removing
+        # the file reproduces that window without needing two processes.
+        memory = Memory(location=tmp_path, verbose=0)
+        f = memory.cache(
+            self.foo, cache_validation_callback=expires_after(hours=1), ignore=["d"]
+        )
+
+        d1, d2 = {"run": False}, {"run": False}
+        assert f(2, d1) == 4
+        call_id = (f.func_id, f._get_args_id(2, d1))
+        item_dir = f.store_backend.get_item_info(call_id)["location"]
+        os.remove(os.path.join(item_dir, "metadata.json"))
+
+        # Used to hand the callback {} and raise KeyError: 'time'
+        assert f(2, d2) == 4
+        assert d2["run"]
+
 
 class TestMemorizedFunc:
     "Tests for the MemorizedFunc and NotMemorizedFunc classes"
