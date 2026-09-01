@@ -1,12 +1,11 @@
 Release Notes
 =============
 
-In development
+In Development
 --------------
 
-- Drop python 3.9 support. The oldest supported Python version
-  is now Python 3.10.
-  https://github.com/joblib/joblib/pull/1773
+- Fix ``eval_expr`` to reject an oversized power before evaluating it.
+  https://github.com/joblib/joblib/pull/1841
 
 - Stop leaking one temporary folder registration, and the ``atexit`` finalizer
   behind it, per ``Parallel`` call. Those folders are registered with the
@@ -15,6 +14,24 @@ In development
   without running its ``atexit`` finalizers, for instance one killed by a test
   timeout, then reported every one of them as a leaked folder and failed to
   delete folders that had never been created.
+  https://github.com/joblib/joblib/pull/1829
+
+Release 1.6.0 - 2026/08/31
+--------------------------
+
+- Fix caching of functions whose source cannot be retrieved, such as functions
+  defined in a notebook cell. Their identity fell back to
+  ``str(hash(func.__code__))``, which is salted by ``PYTHONHASHSEED`` and so
+  differed between processes. A worker reading the ``func_code.py`` written by
+  another one concluded that the function had changed and wiped the whole
+  cache directory for it, discarding results computed by its peers.
+  ``func_code.py`` is also no longer rewritten in place, so a reader can no
+  longer catch it half-written and draw the same conclusion.
+  https://github.com/joblib/joblib/issues/1694
+
+- Drop python 3.9 support. The oldest supported Python version
+  is now Python 3.10.
+  https://github.com/joblib/joblib/pull/1773
 
 - Fix ``eval_expr`` (used to evaluate the ``pre_dispatch`` argument of
   ``Parallel``) to raise a ``ValueError`` as documented instead of leaking a
@@ -47,6 +64,9 @@ In development
 - The documentation now uses pydata sphinx theme. Furthermore, optional dependencies
   ``test`` and ``docs`` have been added to ``pyproject.toml``.
   https://github.com/joblib/joblib/pull/1774
+
+- Vendor ``loky 3.6.0``
+  https://github.com/joblib/joblib/pull/1843
 
 Release 1.5.3 - 2025/12/15
 --------------------------
